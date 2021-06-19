@@ -24,18 +24,11 @@ import System.Process
   )
 
 deploy :: Config -> IO ()
-deploy config = return ()
+deploy config = do
+  dockerCompose config ["stop"]
+  dockerCompose config ["up", "-d", "--build", "--force-recreate"]
 
 type Args = [T.Text]
-
-callProcessWithEnv :: M.Map T.Text T.Text -> FilePath -> [String] -> IO ()
-callProcessWithEnv envs cmd args = do
-  let p = (proc cmd args) {delegate_ctlc = True, env = Just (map (bimap T.unpack T.unpack) $ M.toList envs)}
-  (_, _, _, handle) <- createProcess p
-  exitCode <- waitForProcess handle
-  case exitCode of
-    ExitSuccess -> return ()
-    ExitFailure r -> exitFailure
 
 dockerCompose :: Config -> Args -> IO ()
 dockerCompose config args = do
@@ -67,3 +60,12 @@ type Tag = T.Text
 
 release :: Config -> Tag -> IO ()
 release config tag = return ()
+
+callProcessWithEnv :: M.Map T.Text T.Text -> FilePath -> [String] -> IO ()
+callProcessWithEnv envs cmd args = do
+  let p = (proc cmd args) {delegate_ctlc = True, env = Just (map (bimap T.unpack T.unpack) $ M.toList envs)}
+  (_, _, _, handle) <- createProcess p
+  exitCode <- waitForProcess handle
+  case exitCode of
+    ExitSuccess -> return ()
+    ExitFailure r -> exitFailure
