@@ -1,0 +1,89 @@
+name: New release
+on:
+  push:
+    tags:
+      - v[0-9]*\.[0-9]*\.[0-9]*
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - uses: haskell/actions/setup@v1
+        with:
+          ghc-version: '8.10.4'
+          enable-stack: true
+
+      - name: Clone project
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: ${{ matrix.os }}-${{ hashFiles('carrier.cabal') }}
+          restore-keys: |
+            ${{ matrix.os }}
+
+      - run: "stack build"
+      - run: "zip --junk-paths carrier-${{ matrix.os }} $(stack path --dist-dir)/build/carrier/carrier"
+
+      - name: Upload dist directory artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: carrier-${{ matrix.os }}
+          path: carrier-${{ matrix.os }}.zip
+
+  create-release:
+    name: Create Github Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - id: create-release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - run: |
+          echo '${{ steps.create-release.outputs.upload_url }}' > release_upload_url.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: create-release
+          path: release_upload_url.txt
+
+  upload-release:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: create-release
+      - id: upload-url
+        run: |
+          echo "::set-output name=url::$(cat create-release/release_upload_url.txt)"
+      - uses: actions/download-artifact@v1
+        with:
+          name: carrier-${{ matrix.os }}
+      - uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.upload-url.outputs.url }}
+          asset_path: ./carrier-${{ matrix.os }}/carrier-${{ matrix.os }}.zip
+          asset_name: carrier-${{ matrix.os }}.zip
+          asset_content_type: application/zip
