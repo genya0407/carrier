@@ -25,6 +25,10 @@ dependencies:
 - text
 - containers
 - optparse-applicative
+- aeson-pretty
+- bytestring
+- system-fileio
+- system-filepath
 
 library:
   source-dirs: src

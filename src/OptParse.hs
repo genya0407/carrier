@@ -5,6 +5,10 @@ import Data.Semigroup ((<>))
 import qualified Data.Text as T
 import Options.Applicative
 
+type ConfigPath = T.Text
+
+data Command = InitializeOpts CM.ProjectName ConfigPath | DeployOpts ConfigPath | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
+
 parseCommand :: IO Command
 parseCommand = do
   execParser opts
@@ -20,7 +24,7 @@ configOption :: Parser T.Text
 configOption = T.pack <$> strOption (long "config" <> short 'c' <> metavar "FILE" <> value "carrier.json" <> help "Configuration file")
 
 initializeParser :: Parser Command
-initializeParser = InitializeOpts <$> strArgument (metavar "NAME")
+initializeParser = InitializeOpts <$> strArgument (metavar "NAME") <*> configOption
 
 deployParser :: Parser Command
 deployParser = DeployOpts <$> configOption
@@ -39,7 +43,3 @@ cmdParser =
         <> command "docker-compose" (info dockerComposeParser (progDesc "Exec docker-compose command with given arguments"))
         <> command "release" (info releaseParser (progDesc "Create git tag, build docker image, push it to registry"))
     )
-
-type ConfigPath = T.Text
-
-data Command = InitializeOpts CM.ProjectName | DeployOpts ConfigPath | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
