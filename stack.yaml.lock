@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: bifunctor-0.1.0.0@sha256:56dc996f4411a00b894640b4c0a3ef97f1b747825054765ab51db819b73285f9,1604
+    pantry-tree:
+      size: 323
+      sha256: ea667cd346d6344d7211e962dcf63ca0232eae10909fff2dd9c43346fae68507
+  original:
+    hackage: bifunctor-0.1.0.0
 snapshots:
 - completed:
     size: 585393

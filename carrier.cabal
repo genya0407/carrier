@@ -35,13 +35,16 @@ library
   default-extensions:
       DeriveGeneric
       OverloadedStrings
+      ScopedTypeVariables
   build-depends:
       aeson
     , aeson-pretty
     , base >=4.7 && <5
+    , bifunctor
     , bytestring
     , containers
     , optparse-applicative
+    , process
     , system-fileio
     , system-filepath
     , text
@@ -58,10 +61,12 @@ executable carrier
       aeson
     , aeson-pretty
     , base >=4.7 && <5
+    , bifunctor
     , bytestring
     , carrier
     , containers
     , optparse-applicative
+    , process
     , system-fileio
     , system-filepath
     , text
@@ -79,10 +84,12 @@ test-suite carrier-test
       aeson
     , aeson-pretty
     , base >=4.7 && <5
+    , bifunctor
     , bytestring
     , carrier
     , containers
     , optparse-applicative
+    , process
     , system-fileio
     , system-filepath
     , text

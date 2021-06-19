@@ -9,6 +9,7 @@ data Config = Config
   { projectName :: T.Text,
     port :: T.Text,
     tag :: T.Text,
+    context :: T.Text,
     environments :: M.Map T.Text T.Text
   }
   deriving (Generic, Show)

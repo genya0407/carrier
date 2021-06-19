@@ -29,12 +29,15 @@ dependencies:
 - bytestring
 - system-fileio
 - system-filepath
+- process
+- bifunctor
 
 library:
   source-dirs: src
   default-extensions:
     - DeriveGeneric
     - OverloadedStrings
+    - ScopedTypeVariables
 
 executables:
   carrier:
