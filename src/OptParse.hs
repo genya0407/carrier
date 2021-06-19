@@ -9,7 +9,9 @@ type ConfigPath = T.Text
 
 type Context = T.Text
 
-data Command = InitializeOpts CM.ProjectName ConfigPath Context | DeployOpts ConfigPath | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
+type Registry = T.Text
+
+data Command = InitializeOpts CM.ProjectName ConfigPath Context Registry | DeployOpts ConfigPath | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
 
 parseCommand :: IO Command
 parseCommand = do
@@ -26,7 +28,12 @@ configOption :: Parser T.Text
 configOption = T.pack <$> strOption (long "config" <> short 'c' <> metavar "FILE" <> value "carrier.json" <> help "Configuration file")
 
 initializeParser :: Parser Command
-initializeParser = InitializeOpts <$> strArgument (metavar "NAME") <*> configOption <*> strOption (long "context" <> metavar "CONTEXT" <> help "Docker context")
+initializeParser =
+  InitializeOpts
+    <$> strArgument (metavar "NAME")
+    <*> configOption
+    <*> strOption (long "context" <> metavar "CONTEXT" <> help "Docker context")
+    <*> strOption (long "registry" <> metavar "REGISTRY" <> help "Docker registry")
 
 deployParser :: Parser Command
 deployParser = DeployOpts <$> configOption

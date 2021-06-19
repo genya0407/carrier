@@ -48,6 +48,7 @@ library
     , system-fileio
     , system-filepath
     , text
+    , tostring
   default-language: Haskell2010
 
 executable carrier
@@ -70,6 +71,7 @@ executable carrier
     , system-fileio
     , system-filepath
     , text
+    , tostring
   default-language: Haskell2010
 
 test-suite carrier-test
@@ -93,4 +95,5 @@ test-suite carrier-test
     , system-fileio
     , system-filepath
     , text
+    , tostring
   default-language: Haskell2010

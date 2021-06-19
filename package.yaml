@@ -31,6 +31,7 @@ dependencies:
 - system-filepath
 - process
 - bifunctor
+- tostring
 
 library:
   source-dirs: src

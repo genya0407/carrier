@@ -10,7 +10,9 @@ data Config = Config
     port :: T.Text,
     tag :: T.Text,
     context :: T.Text,
-    environments :: M.Map T.Text T.Text
+    environments :: M.Map T.Text T.Text,
+    images :: M.Map T.Text T.Text,
+    registry :: T.Text
   }
   deriving (Generic, Show)
 
