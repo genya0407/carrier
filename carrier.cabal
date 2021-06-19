@@ -27,6 +27,7 @@ library
   exposed-modules:
       Commands
       Config
+      OptParse
   other-modules:
       Paths_carrier
   hs-source-dirs:
