@@ -19,3 +19,30 @@ data Config = Config
 instance ToJSON Config
 
 instance FromJSON Config
+
+{-
+version: '3'
+services:
+  web:
+    image: docker.genya0407.net/reing_web:${TAG}
+    command: cargo run --release
+    ports:
+      - "127.0.0.1:${PORT:?err}:3000"
+    restart: always
+    links:
+      - postgres
+    env_file: .env
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:12-alpine
+    restart: always
+    env_file: .env
+    volumes:
+      - reing_pg_data:/var/lib/postgresql/data
+
+volumes:
+  reing_pg_data:
+    external: true
+
+-}

@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Filesystem (isFile)
 import Filesystem.Path.CurrentOS (encodeString, fromText)
+import NeatInterpolation
 import System.Environment
 import System.Exit
   ( ExitCode (ExitFailure, ExitSuccess),
@@ -64,6 +65,10 @@ initialize projectName configPathTxt context registry = do
   if configFileExists
     then T.putStrLn ("'" <> configPathTxt <> "' already exists.") >> exitFailure
     else B.writeFile (encodeString configPath) json
+  dockerComposeYmlExists <- isFile (fromText "docker-compose.yml")
+  if dockerComposeYmlExists
+    then T.putStrLn "docker-compose.yml already exists" >> exitFailure
+    else T.writeFile "docker-compose.yml" (initialDockerComposeYml config)
 
 type Tag = T.Text
 
@@ -73,9 +78,9 @@ release config tag configPath = do
       json = A.encodePretty updatedConfig
   B.writeFile (toString configPath) json
   forM_ (M.toList $ images config) $ \(imageName, dockerfile) -> do
-    let fullQualifiedImageName = registry config <> "/" <> projectName config <> "_" <> imageName <> ":" <> tag
-    callProcessWithEnv M.empty "docker" ["build", ".", "-f", dockerfile, "-t", fullQualifiedImageName]
-    callProcessWithEnv M.empty "docker" ["push", fullQualifiedImageName]
+    let imageNameWithTag = fullQualifiedImageName config imageName <> ":" <> tag
+    callProcessWithEnv M.empty "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag]
+    callProcessWithEnv M.empty "docker" ["push", imageNameWithTag]
 
 -- private functions
 
@@ -90,3 +95,34 @@ callProcessWithEnv envs cmd args = do
   case exitCode of
     ExitSuccess -> return ()
     ExitFailure r -> exitFailure
+
+fullQualifiedImageName config imageName = registry config <> "/" <> projectName config <> "_" <> imageName
+
+initialDockerComposeYml config =
+  let _imageName = fullQualifiedImageName config "web"
+      _proj = projectName config
+   in [text|
+    version: '3'
+    services:
+      web:
+        image: $_imageName:$${TAG}
+        command: TODO
+        ports:
+          - "127.0.0.1:$${PORT:?err}:3000"
+        restart: always
+        links:
+          - postgres
+        env_file: .env
+        depends_on:
+          - postgres
+      postgres:
+        image: postgres:12-alpine
+        restart: always
+        env_file: .env
+        volumes:
+          - ${_proj}_pg_data:/var/lib/postgresql/data 
+
+    volumes:
+      ${_proj}_pg_data:
+        external: true
+  |]
