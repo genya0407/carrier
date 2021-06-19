@@ -21,12 +21,19 @@ description:         Please see the README on GitHub at <https://github.com/geny
 
 dependencies:
 - base >= 4.7 && < 5
+- aeson
+- text
+- containers
+- optparse-applicative
 
 library:
   source-dirs: src
+  default-extensions:
+    - DeriveGeneric
+    - OverloadedStrings
 
 executables:
-  carrier-exe:
+  carrier:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
