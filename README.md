@@ -1,4 +1,4 @@
-# carrier
+# Carrier
 
 CLI Tool for managing container based deployment system.
 
@@ -110,4 +110,19 @@ $ carrier deploy
 
 # You can watch logs
 $ carrier docker-compose -- logs -f
+```
+
+### Update applications
+
+If you want to update applications, you do `release` and `deploy`.
+
+```shell
+# Edit application
+$ vim main.go
+
+# Build docker image and push it.
+$ carrier release v0.2
+
+# Deploy new image
+$ carrier deploy
 ```
