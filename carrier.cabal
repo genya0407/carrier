@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           carrier
-version:        0.1.0.0
+version:        0.2.0.0
 description:    Please see the README on GitHub at <https://github.com/genya0407/carrier#readme>
 homepage:       https://github.com/genya0407/carrier#readme
 bug-reports:    https://github.com/genya0407/carrier/issues
