@@ -87,7 +87,7 @@ release config tag configPath = do
   LB.writeFile (toString configPath) json
   forM_ (M.toList $ images config) $ \(imageName, dockerfile) -> do
     let imageNameWithTag = fullQualifiedImageName config imageName <> ":" <> tag
-    callProcessWithEnv M.empty "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag]
+    callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
     callProcessWithEnv M.empty "docker" ["push", imageNameWithTag]
 
 -- private functions
