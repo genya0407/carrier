@@ -40,7 +40,7 @@ type Args = [T.Text]
 
 deploy :: Config -> [T.Text] -> IO ()
 deploy config services = do
-  dockerCompose config $ ["up", "-d", "--build", "--force-recreate"] <> services
+  dockerCompose config $ ["up", "-d"] <> services
 
 dockerCompose :: Config -> Args -> IO ()
 dockerCompose config args = do
