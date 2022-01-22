@@ -13,7 +13,12 @@ type Context = T.Text
 
 type Registry = T.Text
 
-data Command = InitializeOpts CM.ProjectName ConfigPath Context Registry | DeployOpts ConfigPath [Service] | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
+data Command = InitializeOpts CM.ProjectName ConfigPath Context Registry
+  | DeployOpts ConfigPath [Service]
+  | GracefulDeployOpts ConfigPath [Service]
+  | DockerComposeOpts ConfigPath CM.Args
+  | ReleaseOpts ConfigPath CM.Tag
+  deriving (Show)
 
 parseCommand :: IO Command
 parseCommand = do
@@ -40,6 +45,9 @@ initializeParser =
 deployParser :: Parser Command
 deployParser = DeployOpts <$> configOption <*> many (strArgument (metavar "SERVICES"))
 
+gracefulDeployParser :: Parser Command
+gracefulDeployParser = GracefulDeployOpts <$> configOption <*> many (strArgument (metavar "SERVICES"))
+
 dockerComposeParser :: Parser Command
 dockerComposeParser = DockerComposeOpts <$> configOption <*> some (strArgument (metavar "ARGS..."))
 
@@ -51,6 +59,7 @@ cmdParser =
   hsubparser
     ( command "init" (info initializeParser (progDesc "Initialize carrier for this project"))
         <> command "deploy" (info deployParser (progDesc "Exec deployment"))
+        <> command "graceful-deploy" (info gracefulDeployParser (progDesc "Exec deployment in graceful manner"))
         <> command "docker-compose" (info dockerComposeParser (progDesc "Exec docker-compose command with given arguments"))
         <> command "release" (info releaseParser (progDesc "Create git tag, build docker image, push it to registry"))
     )

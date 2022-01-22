@@ -1,4 +1,4 @@
-module Commands (deploy, dockerCompose, initialize, release, Args, ProjectName, Tag) where
+module Commands (deploy, gracefulDeploy, dockerCompose, initialize, release, Args, ProjectName, Tag) where
 
 import Config (Config (..))
 import Control.Monad
@@ -27,6 +27,14 @@ import System.Process
     waitForProcess,
   )
 import qualified Data.String.ToString as T
+import System.IO.Temp (emptySystemTempFile)
+import qualified GHC.IO.Handle as T
+import qualified Data.Yaml as Yaml
+import qualified Data.Yaml.Aeson as Yaml
+import qualified Data.Aeson as Aeson
+import qualified Data.HashMap.Lazy as HashMap
+
+import System.Directory (removeFile)
 
 type ProjectName = T.Text
 
@@ -47,6 +55,43 @@ dockerCompose config args = do
   let allArgs = ["--context", context config, "-f", "docker-compose.yml", "-f", "docker-compose.production.yml"] <> args
   callProcessWithEnv (allEnvs config) "docker-compose" (Prelude.map T.unpack allArgs)
   return ()
+
+gracefulDeploy :: Config -> [T.Text] -> IO ()
+gracefulDeploy config services = do
+  dockerComposeBackup config $ ["--project-directory", ".", "up", "-d"] <> map (<> "_backup") services
+  dockerCompose config $ ["up", "-d"] <> services
+  dockerCompose config $ ["up", "-d", "--remove-orphans"] <> services
+
+dockerComposeBackup :: Config -> Args -> IO()
+dockerComposeBackup config args = do
+  let
+    createBackupFile originalFile = do
+      originalData <- Yaml.decodeFileThrow originalFile
+      let
+        Just originalDataValue = originalData :: Maybe Aeson.Value
+        for = flip map
+        Aeson.Object topLevelObject = originalDataValue
+        modifiedDataValue = Aeson.Object . HashMap.fromList $ for (HashMap.toList topLevelObject) $ \(name1, value1) -> if name1 /= "services"
+          then (name1, value1)
+          else case value1 of
+            Aeson.Object object1 -> (
+              name1,
+              Aeson.Object . HashMap.fromList $ for (HashMap.toList object1) $ \(name2, value2) -> if name2 `notElem` (M.keys . images $ config)
+                then (name2, value2)
+                else (name2 <> "_backup", value2)
+              )
+            _ -> error ("unexpected service: " <> T.unpack name1)
+      modifiedFile <- emptySystemTempFile originalFile
+      Aeson.encodeFile modifiedFile modifiedDataValue
+      return modifiedFile
+  dcFileName <- createBackupFile "docker-compose.yml"
+  dcProdFileName <- createBackupFile "docker-compose.production.yml"
+  let
+    backupConfig = config { port = T.pack . show $ (read . T.unpack . port $ config) + 10000 }
+    allArgs = ["--context", context backupConfig, "-f", T.pack dcFileName, "-f", T.pack dcProdFileName] <> args
+  callProcessWithEnv (allEnvs backupConfig) "docker-compose" (Prelude.map T.unpack allArgs)
+  removeFile dcFileName
+  removeFile dcProdFileName
 
 initialize :: ProjectName -> ConfigPath -> Context -> Registry -> IO ()
 initialize projectName configPathTxt context registry = do
