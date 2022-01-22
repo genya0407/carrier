@@ -22,6 +22,6 @@ main = do
   cmd <- parseCommand
   case cmd of
     InitializeOpts projectName configPath context registry -> CM.initialize projectName configPath context registry
-    DeployOpts configPath -> loadConfig configPath >>= CM.deploy
+    DeployOpts configPath services -> loadConfig configPath >>= \cfg -> CM.deploy cfg services
     DockerComposeOpts configPath args -> loadConfig configPath >>= \cfg -> CM.dockerCompose cfg args
     ReleaseOpts configPath tag -> loadConfig configPath >>= \cfg -> CM.release cfg tag configPath

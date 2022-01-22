@@ -7,11 +7,13 @@ import Options.Applicative
 
 type ConfigPath = T.Text
 
+type Service = T.Text
+
 type Context = T.Text
 
 type Registry = T.Text
 
-data Command = InitializeOpts CM.ProjectName ConfigPath Context Registry | DeployOpts ConfigPath | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
+data Command = InitializeOpts CM.ProjectName ConfigPath Context Registry | DeployOpts ConfigPath [Service] | DockerComposeOpts ConfigPath CM.Args | ReleaseOpts ConfigPath CM.Tag deriving (Show)
 
 parseCommand :: IO Command
 parseCommand = do
@@ -36,7 +38,7 @@ initializeParser =
     <*> strOption (long "registry" <> metavar "REGISTRY" <> help "Docker registry")
 
 deployParser :: Parser Command
-deployParser = DeployOpts <$> configOption
+deployParser = DeployOpts <$> configOption <*> many (strArgument (metavar "SERVICES"))
 
 dockerComposeParser :: Parser Command
 dockerComposeParser = DockerComposeOpts <$> configOption <*> some (strArgument (metavar "ARGS..."))

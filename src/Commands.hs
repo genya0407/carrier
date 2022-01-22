@@ -38,10 +38,9 @@ type Registry = T.Text
 
 type Args = [T.Text]
 
-deploy :: Config -> IO ()
-deploy config = do
-  dockerCompose config ["stop"]
-  dockerCompose config ["up", "-d", "--build", "--force-recreate"]
+deploy :: Config -> [T.Text] -> IO ()
+deploy config services = do
+  dockerCompose config $ ["up", "-d", "--build", "--force-recreate"] <> services
 
 dockerCompose :: Config -> Args -> IO ()
 dockerCompose config args = do
