@@ -75,7 +75,7 @@ writeFileIfAbsent :: T.Text -> T.Text -> IO ()
 writeFileIfAbsent path text = do
   fileExists <- isFile (fromText path)
   if fileExists
-    then T.putStrLn (path <> " already exists") >> exitFailure
+    then T.putStrLn (path <> " already exists")
     else T.writeFile (T.toString path) text
 
 type Tag = T.Text
