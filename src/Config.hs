@@ -10,6 +10,7 @@ data Config = Config
     port :: T.Text,
     tag :: T.Text,
     context :: T.Text,
+    arch :: Maybe T.Text,
     environments :: M.Map T.Text T.Text,
     images :: M.Map T.Text T.Text,
     registry :: T.Text

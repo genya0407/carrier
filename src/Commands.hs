@@ -102,6 +102,7 @@ initialize projectName configPathTxt context registry = do
             port = "3000",
             tag = "v1.0,0",
             context = context,
+            arch = Just "arm64",
             environments = M.empty,
             images = M.fromList [("web", "Dockerfile")],
             registry = registry
@@ -131,12 +132,16 @@ release config tag configPath = do
   LB.writeFile (toString configPath) json
   forM_ (M.toList $ images config) $ \(imageName, dockerfile) -> do
     let imageNameWithTag = fullQualifiedImageName config imageName <> ":" <> tag
-    callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+    case arch config of
+      Just "amd64" -> callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Nothing -> callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Just "arm64" -> callProcessWithEnv M.empty "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/arm64/v8"]
+      Just unknown -> error $ "Unknown architecture: " <> T.unpack unknown
     callProcessWithEnv M.empty "docker" ["push", imageNameWithTag]
 
 -- private functions
 
-allEnvs config = M.fromList [("PORT", port config), ("TAG", tag config)] `M.union` environments config
+allEnvs config = M.fromList [("PORT", port config), ("TAG", tag config), ("REGISTRY", registry config)] `M.union` environments config
 
 callProcessWithEnv :: ToString s => M.Map T.Text T.Text -> FilePath -> [s] -> IO ()
 callProcessWithEnv envs cmd args = do
