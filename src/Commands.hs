@@ -99,12 +99,12 @@ initialize projectName configPathTxt context registry = do
       config =
         Config
           { projectName = projectName,
-            port = "3000",
+            port = "80",
             tag = "v1.0,0",
             context = context,
             arch = Just "arm64",
             environments = M.empty,
-            images = M.fromList [("web", "Dockerfile")],
+            images = M.fromList [(projectName <> "_web", "Dockerfile")],
             registry = registry
           }
       json = A.encodePretty config
@@ -120,7 +120,9 @@ writeFileIfAbsent :: T.Text -> T.Text -> IO ()
 writeFileIfAbsent path text = do
   fileExists <- isFile (fromText path)
   if fileExists
-    then T.putStrLn (path <> " already exists")
+    then do
+      T.putStrLn (path <> " already exists")
+      T.writeFile (T.toString path <> ".new") text
     else T.writeFile (T.toString path) text
 
 type Tag = T.Text
@@ -160,13 +162,14 @@ initialDockerComposeYml config =
   in [text|
     version: '3'
     services:
-      web:
+      ${_proj}_web:
         command: TODO
         restart: always
-        links:
-          - postgres
         depends_on:
           - postgres
+        networks:
+          - default
+          - applications
       postgres:
         image: postgres:12-alpine
         restart: always
@@ -176,29 +179,34 @@ initialDockerComposeYml config =
     volumes:
       ${_proj}_pg_data:
         external: true
+
+    networks:
+      applications:
+        external: true
   |]
 
 initialDockerComposeProductionYml config =
-  let _imageName = fullQualifiedImageName config "web"
+  let
+    _proj = projectName config
+    _imageName = fullQualifiedImageName config (_proj <> "_web")
   in
   [text|
     services:
-      web:
+      ${_proj}_web:
         image: $_imageName:$${TAG}
-        ports:
-          - "127.0.0.1:$${PORT:?err}:3000"
         env_file: .env.production
       postgres:
         env_file: .env.production
   |]
 
 initialDockerComposeDevelopmentYml config =
-  [text|
+  let _proj = projectName config
+  in [text|
     services:
-      web:
+      ${_proj}_web:
         build: .
-        ports:
-          - "127.0.0.1:3000:3000"
+        profiles:
+          - donotstart
         env_file: .env.development
       postgres:
         env_file: .env.development
