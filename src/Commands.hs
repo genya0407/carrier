@@ -3,38 +3,37 @@ module Commands (deploy, gracefulDeploy, dockerCompose, initialize, release, Arg
 import Config (Config (..))
 import Control.Monad
 import qualified Data.Aeson as A
+import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as A
 import Data.Bifunctor
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.HashMap.Lazy as HashMap
 import qualified Data.Map as M
 import Data.String.ToString
+import qualified Data.String.ToString as T
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as T
+import qualified Data.Yaml as Yaml
+import qualified Data.Yaml.Aeson as Yaml
 import Filesystem (isFile)
 import Filesystem.Path.CurrentOS (encodeString, fromText)
+import qualified GHC.IO.Handle as T
 import NeatInterpolation
+import System.Directory (removeFile)
 import System.Environment
 import System.Exit
   ( ExitCode (ExitFailure, ExitSuccess),
     exitFailure,
   )
+import System.IO.Temp (emptySystemTempFile)
 import System.Process
   ( CreateProcess (delegate_ctlc, env),
     createProcess,
     proc,
     waitForProcess,
   )
-import qualified Data.String.ToString as T
-import System.IO.Temp (emptySystemTempFile)
-import qualified GHC.IO.Handle as T
-import qualified Data.Yaml as Yaml
-import qualified Data.Yaml.Aeson as Yaml
-import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Lazy as HashMap
-
-import System.Directory (removeFile)
 
 type ProjectName = T.Text
 
@@ -62,33 +61,34 @@ gracefulDeploy config services = do
   dockerCompose config $ ["up", "-d"] <> services
   dockerCompose config $ ["up", "-d", "--remove-orphans"] <> services
 
-dockerComposeBackup :: Config -> Args -> IO()
+dockerComposeBackup :: Config -> Args -> IO ()
 dockerComposeBackup config args = do
-  let
-    createBackupFile originalFile = do
-      originalData <- Yaml.decodeFileThrow originalFile
-      let
-        Just originalDataValue = originalData :: Maybe Aeson.Value
-        for = flip map
-        Aeson.Object topLevelObject = originalDataValue
-        modifiedDataValue = Aeson.Object . HashMap.fromList $ for (HashMap.toList topLevelObject) $ \(name1, value1) -> if name1 /= "services"
-          then (name1, value1)
-          else case value1 of
-            Aeson.Object object1 -> (
-              name1,
-              Aeson.Object . HashMap.fromList $ for (HashMap.toList object1) $ \(name2, value2) -> if name2 `notElem` (M.keys . images $ config)
-                then (name2, value2)
-                else (name2 <> "_backup", value2)
-              )
-            _ -> error ("unexpected service: " <> T.unpack name1)
-      modifiedFile <- emptySystemTempFile originalFile
-      Aeson.encodeFile modifiedFile modifiedDataValue
-      return modifiedFile
+  let createBackupFile originalFile = do
+        originalData <- Yaml.decodeFileThrow originalFile
+        let Just originalDataValue = originalData :: Maybe Aeson.Value
+            for = flip map
+            Aeson.Object topLevelObject = originalDataValue
+            modifiedDataValue = Aeson.Object . HashMap.fromList $
+              for (HashMap.toList topLevelObject) $ \(name1, value1) ->
+                if name1 /= "services"
+                  then (name1, value1)
+                  else case value1 of
+                    Aeson.Object object1 ->
+                      ( name1,
+                        Aeson.Object . HashMap.fromList $
+                          for (HashMap.toList object1) $ \(name2, value2) ->
+                            if name2 `notElem` (M.keys . images $ config)
+                              then (name2, value2)
+                              else (name2 <> "_backup", value2)
+                      )
+                    _ -> error ("unexpected service: " <> T.unpack name1)
+        modifiedFile <- emptySystemTempFile originalFile
+        Aeson.encodeFile modifiedFile modifiedDataValue
+        return modifiedFile
   dcFileName <- createBackupFile "docker-compose.yml"
   dcProdFileName <- createBackupFile "docker-compose.production.yml"
-  let
-    backupConfig = config { port = T.pack . show $ (read . T.unpack . port $ config) + 10000 }
-    allArgs = ["--context", context backupConfig, "-f", T.pack dcFileName, "-f", T.pack dcProdFileName] <> args
+  let backupConfig = config {port = T.pack . show $ (read . T.unpack . port $ config) + 10000}
+      allArgs = ["--context", context backupConfig, "-f", T.pack dcFileName, "-f", T.pack dcProdFileName] <> args
   callProcessWithEnv (allEnvs backupConfig) "docker-compose" (Prelude.map T.unpack allArgs)
   removeFile dcFileName
   removeFile dcProdFileName
@@ -159,7 +159,7 @@ fullQualifiedImageName config imageName = registry config <> "/" <> projectName 
 
 initialDockerComposeYml config =
   let _proj = projectName config
-  in [text|
+   in [text|
     version: '3'
     services:
       ${_proj}_web:
@@ -186,11 +186,9 @@ initialDockerComposeYml config =
   |]
 
 initialDockerComposeProductionYml config =
-  let
-    _proj = projectName config
-    _imageName = fullQualifiedImageName config (_proj <> "_web")
-  in
-  [text|
+  let _proj = projectName config
+      _imageName = fullQualifiedImageName config (_proj <> "_web")
+   in [text|
     services:
       ${_proj}_web:
         image: $_imageName:$${TAG}
@@ -201,7 +199,7 @@ initialDockerComposeProductionYml config =
 
 initialDockerComposeDevelopmentYml config =
   let _proj = projectName config
-  in [text|
+   in [text|
     services:
       ${_proj}_web:
         build: .
