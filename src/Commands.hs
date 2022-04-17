@@ -135,11 +135,11 @@ release config tag configPath = do
   forM_ (M.toList $ images config) $ \(imageName, dockerfile) -> do
     let imageNameWithTag = fullQualifiedImageName config imageName <> ":" <> tag
     case arch config of
-      Just "amd64" -> callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
-      Nothing -> callProcessWithEnv M.empty "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
-      Just "arm64" -> callProcessWithEnv M.empty "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/arm64/v8"]
+      Just "amd64" -> callProcessWithEnv (environments config) "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Nothing -> callProcessWithEnv (environments config) "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Just "arm64" -> callProcessWithEnv (environments config) "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/arm64/v8"]
       Just unknown -> error $ "Unknown architecture: " <> T.unpack unknown
-    callProcessWithEnv M.empty "docker" ["push", imageNameWithTag]
+    callProcessWithEnv (environments config) "docker" ["push", imageNameWithTag]
 
 -- private functions
 
