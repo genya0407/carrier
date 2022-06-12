@@ -132,12 +132,12 @@ release config tag configPath = do
   let updatedConfig = config {tag = tag}
       json = A.encodePretty updatedConfig
   LB.writeFile (toString configPath) json
-  forM_ (M.toList $ images config) $ \(imageName, dockerfile) -> do
+  forM_ (M.toList $ images config) $ \(imageName, dockerContext) -> do
     let imageNameWithTag = fullQualifiedImageName config imageName <> ":" <> tag
     case arch config of
-      Just "amd64" -> callProcessWithEnv (environments config) "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
-      Nothing -> callProcessWithEnv (environments config) "docker" ["buildx", "build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/amd64"]
-      Just "arm64" -> callProcessWithEnv (environments config) "docker" ["build", ".", "-f", dockerfile, "-t", imageNameWithTag, "--platform", "linux/arm64/v8"]
+      Just "amd64" -> callProcessWithEnv (environments config) "docker" ["buildx", "build", dockerContext, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Nothing -> callProcessWithEnv (environments config) "docker" ["buildx", "build", dockerContext, "-t", imageNameWithTag, "--platform", "linux/amd64"]
+      Just "arm64" -> callProcessWithEnv (environments config) "docker" ["build", dockerContext, "-t", imageNameWithTag, "--platform", "linux/arm64/v8"]
       Just unknown -> error $ "Unknown architecture: " <> T.unpack unknown
     callProcessWithEnv (environments config) "docker" ["push", imageNameWithTag]
 

@@ -31,7 +31,7 @@ $ carrier init your-project-name --context your-remote-docker-context --registry
 $ cat carrier.json                                                                                   
 {
     "images": {
-        "web": "Dockerfile"
+        "web": "."
     },
     "context": "your-remote-docker-context",
     "tag": "v1.0,0",
