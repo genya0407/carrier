@@ -51,8 +51,8 @@ deploy config services = do
 
 dockerCompose :: Config -> Args -> IO ()
 dockerCompose config args = do
-  let allArgs = ["--context", context config, "-f", "docker-compose.yml", "-f", "docker-compose.production.yml"] <> args
-  callProcessWithEnv (allEnvs config) "docker-compose" (Prelude.map T.unpack allArgs)
+  let allArgs = ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.production.yml"] <> args
+  callProcessWithEnv (M.insert "DOCKER_CONTEXT" (context config) $ allEnvs config) "docker" (Prelude.map T.unpack allArgs)
   return ()
 
 gracefulDeploy :: Config -> [T.Text] -> IO ()
